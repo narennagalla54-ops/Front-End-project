@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>FoodCare — Reduce Waste & Improve Food Security</title>
+<style>
+:root{--bg:#0b1220;--card:#121a2b;--muted:#93a0b4;--text:#e7edf6;--acc:#5ee3a1;--warn:#ffb347;--bad:#ff6b6b;--ok:#80caff}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#0b1220,#0d1729);color:var(--text);font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1100px;margin:32px auto;padding:0 16px}
+h1{font-size:28px;margin:0 0 6px}
+.sub{color:var(--muted);margin-bottom:20px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{padding:10px 14px;border-radius:999px;background:#0e1626;border:1px solid #1f2a44;cursor:pointer;user-select:none}
+.tab.active{background:var(--card);border-color:#2b3a60;box-shadow:0 0 0 2px #1a2745}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;margin-top:16px}
+.card{grid-column:span 12;background:var(--card);border:1px solid #222e4d;border-radius:16px;padding:16px}
+@media(min-width:900px){.half{grid-column:span 6}}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select,textarea{width:100%;background:#0b1323;border:1px solid #1e2a46;border-radius:12px;padding:10px 12px;color:var(--text);outline:none}
+input:focus,select:focus,textarea:focus{border-color:#3a72ff}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid #20407a;background:#12224a;color:#eaf1ff;padding:10px 14px;border-radius:12px;cursor:pointer}
+.btn.acc{background:#143728;border-color:#1f6145;color:#eafff3}
+.btn.warn{background:#3a2a11;border-color:#6a4b16}
+.btn.bad{background:#3a1111;border-color:#6a1616}
+.btn.ghost{background:transparent;border-color:#2a3b64;color:#bfcbe6}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>div{flex:1 1 160px}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+th,td{padding:10px;border-bottom:1px dashed #28375e}
+th{color:#bcd1ff;text-align:left}
+kbd{background:#0e1629;border:1px solid #1e2a46;border-bottom-color:#132141;border-radius:8px;padding:2px 6px;font-family:ui-monospace,monospace}
+.kpi{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px}
+.k{background:#0d1526;border:1px solid #1e2a46;border-radius:14px;padding:12px}
+.k b{font-size:22px;display:block;margin-top:6px}
+.badge{padding:2px 8px;border-radius:999px;font-size:12px;border:1px solid #264075;color:#bcd1ff}
+footer{margin:28px 0;color:#7690b7;font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FoodCare</h1>
+  <div class="sub">Track surplus food, coordinate donations, fulfill requests, and monitor impact.</div>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-v="donor">Food Donor</div>
+    <div class="tab" data-v="recipient">Recipient Org</div>
+    <div class="tab" data-v="admin">Admin</div>
+    <div class="tab" data-v="analyst">Data Analyst</div>
+  </div>
+
+  <section class="grid" data-s="donor">
+    <div class="card half">
+      <h3>List Surplus Food</h3>
+      <div class="row">
+        <div><label>Item</label><input id="d_item" placeholder="Cooked rice"/></div>
+        <div><label>Qty (servings)</label><input id="d_qty" type="number" min="1" value="10"/></div>
+      </div>
+      <div class="row">
+        <div><label>Expiry</label><input id="d_exp" type="date"/></div>
+        <div><label>Location</label><input id="d_loc" placeholder="Madhapur"/></div>
+        <div><label>Contact</label><input id="d_ctc" placeholder="+91-98xxxxxx"/></div>
+      </div>
+      <div class="row">
+        <div style="flex:1"><label>Notes</label><input id="d_note" placeholder="Veg, sealed"/></div>
+      </div>
+      <div class="row">
+        <button class="btn acc" id="d_add">Add Surplus</button>
+        <button class="btn ghost" id="d_clear">Clear</button>
+      </div>
+    </div>
+    <div class="card half">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <h3 style="margin:0">Active Surplus</h3>
+        <span class="badge"><kbd>Exp&lt;Today</kbd> counted as waste</span>
+      </div>
+      <table>
+        <thead><tr><th>Item</th><th>Qty</th><th>Expiry</th><th>Location</th><th>Contact</th><th></th></tr></thead>
+        <tbody id="t_foods"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid" data-s="recipient" style="display:none">
+    <div class="card half">
+      <h3>Request Food</h3>
+      <div class="row">
+        <div><label>Item</label><input id="r_item" placeholder="Cooked rice"/></div>
+        <div><label>Qty Needed</label><input id="r_qty" type="number" min="1" value="5"/></div>
+      </div>
+      <div class="row">
+        <div><label>Location</label><input id="r_loc" placeholder="Kukatpally"/></div>
+        <div><label>Org Name</label><input id="r_org" placeholder="Helping Hands"/></div>
+        <div><label>Contact</label><input id="r_ctc" placeholder="+91-9xxxxxxxx"/></div>
+      </div>
+      <div class="row">
+        <button class="btn acc" id="r_add">Place Request</button>
+        <button class="btn" id="r_match">Auto-Match</button>
+      </div>
+    </div>
+    <div class="card half">
+      <h3>Open Requests</h3>
+      <table>
+        <thead><tr><th>Item</th><th>Qty</th><th>Org</th><th>Location</th><th>Status</th><th></th></tr></thead>
+        <tbody id="t_reqs"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid" data-s="admin" style="display:none">
+    <div class="card">
+      <h3>Admin — Platform Overview</h3>
+      <div class="kpi">
+        <div class="k"><span>Total Surplus</span><b id="k_sur">0</b></div>
+        <div class="k"><span>Requests</span><b id="k_req">0</b></div>
+        <div class="k"><span>Fulfilled</span><b id="k_ful">0</b></div>
+        <div class="k"><span>Expired (Waste)</span><b id="k_waste">0</b></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn warn" id="a_markexp">Mark Expired Items</button>
+        <button class="btn bad" id="a_reset">Purge All Data</button>
+        <button class="btn ghost" id="a_export">Export JSON</button>
+        <input id="a_import" type="file" accept="application/json" style="display:none"/>
+        <button class="btn" id="a_import_btn">Import JSON</button>
+      </div>
+      <h4 style="margin-top:18px">Distributions</h4>
+      <table>
+        <thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>From</th><th>To</th></tr></thead>
+        <tbody id="t_dist"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid" data-s="analyst" style="display:none">
+    <div class="card half">
+      <h3>Analytics</h3>
+      <div class="kpi">
+        <div class="k"><span>Donated Today</span><b id="m_today">0</b></div>
+        <div class="k"><span>This Week</span><b id="m_week">0</b></div>
+        <div class="k"><span>Waste Rate</span><b id="m_wr">0%</b></div>
+        <div class="k"><span>Active Locations</span><b id="m_loc">0</b></div>
+      </div>
+      <canvas id="chart" width="600" height="260" style="width:100%;margin-top:16px;border-radius:12px;background:#0b1323;border:1px solid #1e2a46"></canvas>
+    </div>
+    <div class="card half">
+      <h3>Raw Data</h3>
+      <details open><summary>Foods</summary><pre id="raw_foods" style="white-space:pre-wrap"></pre></details>
+      <details open><summary>Requests</summary><pre id="raw_reqs" style="white-space:pre-wrap"></pre></details>
+      <details><summary>Distributions</summary><pre id="raw_dist" style="white-space:pre-wrap"></pre></details>
+    </div>
+  </section>
+
+  <footer>Built for FEDF-PS09 demo. Local-only storage. Use <kbd>Admin → Export</kbd> to save.</footer>
+</div>
+
+<script>
+// Simple local-storage helper utilities
+const s = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+const g = k => JSON.parse(localStorage.getItem(k) || '[]');
+const id = () => Math.random().toString(36).slice(2, 9);
+const today = () => new Date().toISOString().slice(0, 10);
+const sum = a => a.reduce((x, y) => x + Number(y || 0), 0);
+
+const st = { foods: g('foods'), reqs: g('reqs'), dist: g('dist') };
+function persist() { s('foods', st.foods); s('reqs', st.reqs); s('dist', st.dist); }
+
+function renderFoods() {
+  const tb = document.getElementById('t_foods'); tb.innerHTML = '';
+  st.foods.forEach((f, i) => {
+    const tr = document.createElement('tr');
+    const ex = new Date(f.exp) < new Date(today());
+    tr.innerHTML = `
+      <td>${f.item}</td>
+      <td>${f.qty}</td>
+      <td>${f.exp}${ex ? ' <span class="badge" style="border-color:#6a1616;color:#ffbdbd">expired</span>' : ''}</td>
+      <td>${f.loc}</td>
+      <td>${f.ctc || ''}</td>
+      <td><button class="btn bad" data-del="${i}">Del</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { st.foods.splice(Number(b.dataset.del), 1); persist(); renderAll(); });
+}
+
+function renderReqs() {
+  const tb = document.getElementById('t_reqs'); tb.innerHTML = '';
+  st.reqs.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.item}</td>
+      <td>${r.qty}</td>
+      <td>${r.org}</td>
+      <td>${r.loc}</td>
+      <td>${r.done ? '<span class="badge" style="border-color:#1f6145;color:#b6ffd7">fulfilled</span>' : 'open'}</td>
+      <td>${r.done ? '' : `<button class="btn" data-f="${i}">Match</button>`} <button class="btn bad" data-dr="${i}">Del</button></td>
+    `;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll('[data-dr]').forEach(b => b.onclick = () => { st.reqs.splice(Number(b.dataset.dr), 1); persist(); renderAll(); });
+  tb.querySelectorAll('[data-f]').forEach(b => b.onclick = () => autoMatch(Number(b.dataset.f)));
+}
+
+function renderDist() {
+  const tb = document.getElementById('t_dist'); tb.innerHTML = '';
+  st.dist.slice().reverse().forEach(d => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${d.date}</td>
+      <td>${d.item}</td>
+      <td>${d.qty}</td>
+      <td>${d.from?.loc || ''}</td>
+      <td>${d.to?.org || ''}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+function kpis() {
+  const activeQty = sum(st.foods.map(x => x.qty));
+  const reqs = st.reqs.length;
+  const ful = st.reqs.filter(r => r.done).length;
+  const waste = sum(st.foods.filter(f => new Date(f.exp) < new Date(today())).map(x => x.qty));
+  document.getElementById('k_sur').textContent = activeQty;
+  document.getElementById('k_req').textContent = reqs;
+  document.getElementById('k_ful').textContent = ful;
+  document.getElementById('k_waste').textContent = waste;
+}
+
+function analyst() {
+  const dists = st.dist;
+  const byDay = {};
+  dists.forEach(d => { byDay[d.date] = (byDay[d.date] || 0) + Number(d.qty); });
+  const days = [...Array(7)].map((_, i) => { const dt = new Date(); dt.setDate(dt.getDate() - (6 - i)); return dt.toISOString().slice(0, 10); });
+  const vals = days.map(d => byDay[d] || 0);
+  const c = document.getElementById('chart').getContext('2d');
+  c.clearRect(0, 0, 600, 260);
+  const w = c.canvas.width, h = c.canvas.height, pl = 40, pr = 10, pt = 10, pb = 30, x0 = pl, y0 = h - pb, x1 = w - pr, y1 = pt;
+  c.beginPath(); c.moveTo(pl, pt); c.lineTo(pl, y0); c.lineTo(x1, y0); c.strokeStyle = "#2a3b64"; c.lineWidth = 1; c.stroke();
+  const max = Math.max(5, ...vals);
+  const sx = (x) => pl + (x * (x1 - pl) / (days.length - 1));
+  const sy = (v) => y0 - (v * (y0 - y1) / max);
+  c.beginPath();
+  vals.forEach((v, i) => { const x = sx(i), y = sy(v); i ? c.lineTo(x, y) : c.moveTo(x, y); });
+  c.lineWidth = 2; c.strokeStyle = "#5ee3a1"; c.stroke();
+  vals.forEach((v, i) => { const x = sx(i), y = sy(v); c.beginPath(); c.arc(x, y, 3, 0, Math.PI * 2); c.fillStyle = "#5ee3a1"; c.fill(); });
+  c.fillStyle = "#93a0b4"; c.font = "12px sans-serif";
+  days.forEach((d, i) => { const x = sx(i); c.fillText(d.slice(5), x - 14, y0 + 16); });
+  c.fillText("Qty (servings)", 4, 12);
+  const todayQty = byDay[today()] || 0;
+  const weekQty = sum(vals);
+  const wasteRate = (() => {
+    const wasted = sum(st.foods.filter(f => new Date(f.exp) < new Date(today())).map(f => f.qty));
+    const donated = weekQty;
+    return donated + wasted ? Math.round((wasted / (donated + wasted)) * 100) : 0;
+  })();
+  const locs = new Set(st.foods.map(f => f.loc).concat(st.reqs.map(r => r.loc)));
+  document.getElementById('m_today').textContent = todayQty;
+  document.getElementById('m_week').textContent = weekQty;
+  document.getElementById('m_wr').textContent = (isNaN(wasteRate) ? 0 : wasteRate) + "%";
+  document.getElementById('m_loc').textContent = locs.size;
+  document.getElementById('raw_foods').textContent = JSON.stringify(st.foods, null, 2);
+  document.getElementById('raw_reqs').textContent = JSON.stringify(st.reqs, null, 2);
+  document.getElementById('raw_dist').textContent = JSON.stringify(st.dist, null, 2);
+}
+
+function renderAll() { renderFoods(); renderReqs(); renderDist(); kpis(); analyst(); }
+
+// Event handlers
+document.getElementById('d_add').onclick = () => {
+  const it = v('d_item'), qty = +v('d_qty'), exp = v('d_exp') || today(), loc = v('d_loc') || 'NA', ctc = v('d_ctc'), note = v('d_note');
+  if (!it || qty < 1) return;
+  st.foods.push({ id: id(), item: it, qty, exp, loc, ctc, note });
+  persist(); renderAll(); clr(['d_item', 'd_qty', 'd_note']);
+};
+document.getElementById('d_clear').onclick = () => clr(['d_item', 'd_qty', 'd_exp', 'd_loc', 'd_ctc', 'd_note']);
+
+document.getElementById('r_add').onclick = () => {
+  const item = v('r_item'), qty = +v('r_qty'), loc = v('r_loc') || 'NA', org = v('r_org') || 'Org', ctc = v('r_ctc');
+  if (!item || qty < 1) return;
+  st.reqs.push({ id: id(), item, qty, loc, org, ctc, done: false });
+  persist(); renderAll();
+};
+document.getElementById('r_match').onclick = () => autoMatch();
+
+function autoMatch(idx) {
+  const list = idx != null ? [st.reqs[idx]] : st.reqs.filter(r => !r.done);
+  list.forEach(r => {
+    const cand = st.foods.filter(f => f.item.toLowerCase() === r.item.toLowerCase() && new Date(f.exp) >= new Date(today()) && f.qty > 0)
+                       .sort((a, b) => new Date(a.exp) - new Date(b.exp));
+    let need = r.qty;
+    cand.forEach(f => {
+      if (need <= 0) return;
+      const take = Math.min(need, f.qty);
+      if (take > 0) {
+        f.qty -= take;
+        need -= take;
+        st.dist.push({ id: id(), date: today(), item: r.item, qty: take, from: { loc: f.loc }, to: { org: r.org } });
+      }
+    });
+    if (need <= 0) r.done = true;
+  });
+  st.foods = st.foods.filter(f => f.qty > 0);
+  persist(); renderAll();
+}
+
+document.getElementById('a_markexp').onclick = () => {
+  const exp = st.foods.filter(f => new Date(f.exp) < new Date(today()));
+  if (!exp.length) { alert('No expired items.'); return; }
+  st.foods = st.foods.filter(f => new Date(f.exp) >= new Date(today()));
+  persist(); renderAll(); alert('Expired items removed and counted as waste in metrics.');
+};
+
+document.getElementById('a_reset').onclick = () => {
+  if (confirm('Delete all local data?')) { st.foods = []; st.reqs = []; st.dist = []; persist(); renderAll(); }
+};
+
+document.getElementById('a_export').onclick = () => {
+  const blob = new Blob([JSON.stringify(st, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'foodcare-data.json'; a.click();
+};
+
+document.getElementById('a_import_btn').onclick = () => document.getElementById('a_import').click();
+document.getElementById('a_import').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { try { const j = JSON.parse(r.result); st.foods = j.foods || []; st.reqs = j.reqs || []; st.dist = j.dist || []; persist(); renderAll(); } catch { alert('Invalid file'); } }; r.readAsText(f);
+};
+
+function v(id) { const el = document.getElementById(id); return el ? String(el.value).trim() : ''; }
+function clr(ids) { ids.forEach(x => { const el = document.getElementById(x); if (el) el.value = ''; }); }
+
+document.querySelectorAll('#tabs .tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('#tabs .tab').forEach(x => x.classList.remove('active')); t.classList.add('active');
+  const vtab = t.dataset.v;
+  document.querySelectorAll('section[data-s]').forEach(s => s.style.display = s.dataset.s === vtab ? 'grid' : 'none');
+  renderAll();
+});
+
+// Seed some demo data if empty
+if (st.foods.length === 0 && st.reqs.length === 0 && st.dist.length === 0) {
+  const seed = today();
+  st.foods = [
+    { id: id(), item: 'Cooked Rice', qty: 20, exp: seed, loc: 'HITEC', ctc: '', note: '' },
+    { id: id(), item: 'Chapati', qty: 30, exp: seed, loc: 'Madhapur', ctc: '', note: '' },
+    { id: id(), item: 'Veg Curry', qty: 10, exp: new Date(Date.now() + 86400000).toISOString().slice(0, 10), loc: 'Gachibowli', ctc: '', note: '' }
+  ];
+  st.reqs = [ { id: id(), item: 'Cooked Rice', qty: 15, loc: 'Kukatpally', org: 'Helping Hands', ctc: '', done: false } ];
+  st.dist = [];
+  persist();
+}
+
+renderAll();
+</script>
+</body>
+</html>
